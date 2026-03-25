@@ -1,0 +1,1780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RPM">
+<title>RPM Planner</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Geist+Mono:wght@300;400;500&family=Geist:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ─── Reset & Variables ──────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:         #0c0b09;
+  --surface:    #151412;
+  --surface2:   #1e1c19;
+  --surface3:   #272420;
+  --border:     #2e2b27;
+  --border2:    #3d3a35;
+  --text:       #ede9e3;
+  --text2:      #a09890;
+  --text3:      #5e5a54;
+  --gold:       #c8a96a;
+  --gold2:      #e2c98e;
+  --gold-dim:   rgba(200,169,106,0.10);
+  --gold-glow:  rgba(200,169,106,0.05);
+  --green:      #6aaa80;
+  --green-dim:  rgba(106,170,128,0.10);
+  --red:        #aa6a6a;
+  --red-dim:    rgba(170,106,106,0.10);
+  --radius:     12px;
+  --radius-sm:  7px;
+  --sidebar-w:  300px;
+  --transition: 0.18s ease;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Geist', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── App Shell ──────────────────────────────────────────────────────────── */
+#app {
+  display: flex;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* ─── Sidebar ────────────────────────────────────────────────────────────── */
+#sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform var(--transition);
+  z-index: 10;
+}
+
+.sidebar-top {
+  padding: calc(20px + var(--safe-top)) 20px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.brand {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px;
+  font-weight: 300;
+  color: var(--gold);
+  letter-spacing: 0.06em;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.brand-sub {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--text3);
+}
+
+.sidebar-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 10px;
+}
+
+.sidebar-scroll::-webkit-scrollbar { width: 3px; }
+.sidebar-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.sidebar-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--text3);
+  padding: 8px 10px 6px;
+}
+
+/* Block Card */
+.block-card {
+  padding: 14px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  margin-bottom: 4px;
+  border: 1px solid transparent;
+  transition: all var(--transition);
+  position: relative;
+}
+
+.block-card:hover {
+  background: var(--surface2);
+  border-color: var(--border);
+}
+
+.block-card.active {
+  background: var(--gold-dim);
+  border-color: rgba(200,169,106,0.25);
+}
+
+.card-category {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text3);
+  margin-bottom: 5px;
+}
+
+.card-result {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 16px;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--text);
+  line-height: 1.3;
+  margin-bottom: 8px;
+}
+
+.block-card.active .card-result { color: var(--gold2); }
+
+.card-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-bar {
+  flex: 1;
+  height: 2px;
+  background: var(--border);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.card-bar-fill {
+  height: 100%;
+  background: var(--gold);
+  border-radius: 1px;
+  transition: width 0.4s ease;
+}
+
+.card-bar-fill.complete { background: var(--green); }
+
+.card-pct {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  color: var(--text3);
+  min-width: 28px;
+  text-align: right;
+}
+
+.card-deadline {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  color: var(--text3);
+  margin-top: 5px;
+}
+
+.card-deadline.urgent { color: var(--red); }
+.card-deadline.soon { color: var(--gold); }
+
+/* Archive nav item */
+.archive-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  margin-bottom: 4px;
+  border: 1px solid transparent;
+  transition: all var(--transition);
+  color: var(--text3);
+  font-size: 13px;
+}
+
+.archive-nav:hover { background: var(--surface2); color: var(--text2); }
+.archive-nav.active { background: var(--surface2); color: var(--text2); border-color: var(--border); }
+
+.archive-nav .arch-icon { font-size: 12px; }
+.archive-nav .arch-count {
+  margin-left: auto;
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  background: var(--surface3);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+/* New block button */
+.new-block-btn {
+  margin: 10px;
+  padding: 11px 14px;
+  background: transparent;
+  border: 1px dashed rgba(200,169,106,0.3);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--gold);
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  transition: all var(--transition);
+  flex-shrink: 0;
+  padding-bottom: calc(11px + var(--safe-bottom));
+}
+
+.new-block-btn:hover {
+  background: var(--gold-dim);
+  border-color: rgba(200,169,106,0.5);
+}
+
+/* ─── Main Panel ─────────────────────────────────────────────────────────── */
+#main {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  min-width: 0;
+}
+
+/* ─── Top Bar (desktop) ──────────────────────────────────────────────────── */
+#topbar {
+  height: 52px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 12px;
+  flex-shrink: 0;
+  background: var(--surface);
+}
+
+.topbar-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 17px;
+  font-style: italic;
+  color: var(--text2);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar-btn {
+  width: 32px; height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text3);
+  font-size: 13px;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+
+.topbar-btn:hover { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+.topbar-btn.danger:hover { background: var(--red-dim); color: var(--red); border-color: var(--red); }
+.topbar-btn.success:hover { background: var(--green-dim); color: var(--green); border-color: var(--green); }
+.topbar-btn.active { background: var(--gold-dim); color: var(--gold); border-color: rgba(200,169,106,0.4); }
+
+/* ─── Content Area ───────────────────────────────────────────────────────── */
+#content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 32px;
+}
+
+#content::-webkit-scrollbar { width: 5px; }
+#content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ─── Empty / Welcome State ──────────────────────────────────────────────── */
+.welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  text-align: center;
+  padding: 40px;
+}
+
+.welcome-glyph {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 72px;
+  color: var(--border2);
+  line-height: 1;
+  font-style: italic;
+}
+
+.welcome h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px;
+  font-weight: 300;
+  font-style: italic;
+  color: var(--text2);
+}
+
+.welcome p {
+  font-size: 13px;
+  color: var(--text3);
+  max-width: 300px;
+  line-height: 1.7;
+}
+
+/* ─── RPM Block View ─────────────────────────────────────────────────────── */
+.rpm-view {}
+
+/* Section blocks */
+.view-section {
+  margin-bottom: 24px;
+}
+
+.field-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--gold);
+  margin-bottom: 6px;
+}
+
+.result-input {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px;
+  font-style: italic;
+  font-weight: 300;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 100%;
+  resize: none;
+  line-height: 1.3;
+  padding: 0;
+}
+
+.result-input::placeholder { color: var(--text3); }
+.result-input.struck { text-decoration: line-through; color: var(--text3); }
+
+.category-input {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text3);
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.category-input::placeholder { color: var(--border2); }
+
+/* Meta row: deadline + total time */
+.meta-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.meta-field {
+  flex: 1;
+  min-width: 160px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+
+.meta-field .field-label { margin-bottom: 4px; }
+
+.meta-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: 'Geist Mono', monospace;
+  font-size: 13px;
+  width: 100%;
+}
+
+.meta-input::placeholder { color: var(--text3); }
+
+.deadline-countdown {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.countdown-val { color: var(--gold); }
+.countdown-val.urgent { color: var(--red); }
+.countdown-val.overdue { color: var(--red); }
+.countdown-val.done { color: var(--green); }
+
+/* Purpose */
+.purpose-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+}
+
+.purpose-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text2);
+  font-size: 14px;
+  font-style: italic;
+  width: 100%;
+  resize: none;
+  line-height: 1.7;
+  min-height: 48px;
+}
+
+.purpose-input::placeholder { color: var(--text3); }
+
+/* Divider */
+.section-rule {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 24px 0;
+}
+
+/* Actions */
+.actions-table-head {
+  display: grid;
+  grid-template-columns: 26px 1fr 72px 64px 28px;
+  gap: 8px;
+  padding: 0 4px 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+.th {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text3);
+}
+
+.th.right { text-align: right; }
+
+.action-row {
+  display: grid;
+  grid-template-columns: 26px 1fr 72px 64px 28px;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 4px;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition);
+  margin-bottom: 2px;
+}
+
+.action-row:hover { background: var(--surface2); }
+
+/* Checkbox */
+.check-box {
+  width: 18px; height: 18px;
+  border: 1.5px solid var(--border2);
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  color: transparent;
+  transition: all var(--transition);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.check-box:hover { border-color: var(--gold); }
+
+.check-box.checked {
+  background: var(--gold-dim);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* Action inputs */
+.action-text {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 13px;
+  font-family: 'Geist', sans-serif;
+  width: 100%;
+  padding: 4px 0;
+  transition: color var(--transition);
+}
+
+.action-text::placeholder { color: var(--border2); }
+.action-text.struck { text-decoration: line-through; color: var(--text3); }
+
+.action-dur {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text2);
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  width: 100%;
+  text-align: right;
+  padding: 4px 0;
+}
+
+.action-dur::placeholder { color: var(--border2); }
+
+.action-pri {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text2);
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  width: 100%;
+  text-align: right;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 4px 0;
+}
+
+.action-pri option { background: var(--surface2); }
+
+.del-action-btn {
+  width: 22px; height: 22px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text3);
+  font-size: 12px;
+  transition: all var(--transition);
+  opacity: 0;
+}
+
+.action-row:hover .del-action-btn { opacity: 1; }
+.del-action-btn:hover { background: var(--red-dim); color: var(--red); }
+
+/* Add action */
+.add-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition);
+  margin-top: 4px;
+}
+
+.add-action:hover { background: var(--surface2); }
+.add-action span { color: var(--text3); font-size: 12px; }
+.add-action .plus { color: var(--gold); font-size: 16px; line-height: 1; }
+
+/* Progress footer */
+.block-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.footer-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 160px;
+}
+
+.fp-bar {
+  flex: 1;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.fp-fill {
+  height: 100%;
+  background: var(--gold);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.fp-fill.complete { background: var(--green); }
+
+.fp-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  color: var(--text3);
+  white-space: nowrap;
+}
+
+.complete-btn {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+  transition: all var(--transition);
+}
+
+.complete-btn:hover {
+  background: var(--green-dim);
+  color: var(--green);
+  border-color: var(--green);
+}
+
+/* ─── Archive View ───────────────────────────────────────────────────────── */
+.archive-view {}
+
+.archive-view h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 26px;
+  font-style: italic;
+  font-weight: 300;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.archive-view .sub {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 0.08em;
+  margin-bottom: 24px;
+}
+
+.archived-card {
+  background: var(--surface);
+  border: 1px solid rgba(106,170,128,0.18);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 12px;
+  opacity: 0.8;
+  transition: opacity var(--transition);
+}
+
+.archived-card:hover { opacity: 1; }
+
+.archived-card .ac-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.archived-card .ac-result {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px;
+  font-style: italic;
+  color: var(--text2);
+  text-decoration: line-through;
+  text-decoration-color: rgba(106,170,128,0.4);
+  line-height: 1.3;
+}
+
+.archived-card .ac-cat {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+  margin-top: 3px;
+}
+
+.restore-btn {
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  color: var(--text3);
+  transition: all var(--transition);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.restore-btn:hover { background: var(--surface2); color: var(--text); }
+
+.archived-card .ac-purpose {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text3);
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+.ac-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.ac-pill {
+  font-size: 10px;
+  font-family: 'Geist Mono', monospace;
+  padding: 3px 8px;
+  border-radius: 3px;
+  background: var(--surface2);
+  color: var(--text3);
+}
+
+.ac-pill.done { text-decoration: line-through; opacity: 0.5; }
+
+.ac-meta {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 0.06em;
+}
+
+/* ─── Sync Status ────────────────────────────────────────────────────────── */
+#sync-status {
+  position: fixed;
+  bottom: calc(16px + var(--safe-bottom));
+  right: 16px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text3);
+  transition: all 0.3s;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0;
+}
+
+#sync-status.show { opacity: 1; }
+#sync-status.saving { color: var(--gold); border-color: rgba(200,169,106,0.3); }
+#sync-status.saved { color: var(--green); border-color: rgba(106,170,128,0.3); }
+#sync-status.error { color: var(--red); border-color: rgba(170,106,106,0.3); }
+
+/* ─── Toast ──────────────────────────────────────────────────────────────── */
+#toast {
+  position: fixed;
+  top: calc(16px + var(--safe-top));
+  left: 50%;
+  transform: translateX(-50%) translateY(-60px);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 10px 18px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  color: var(--text2);
+  letter-spacing: 0.04em;
+  z-index: 200;
+  transition: transform 0.25s ease;
+  white-space: nowrap;
+}
+
+#toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ─── Mobile Nav Bar ─────────────────────────────────────────────────────── */
+#mobile-nav {
+  display: none;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: calc(var(--safe-top) + 10px) 16px 10px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+.mob-brand {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  color: var(--gold);
+  font-style: italic;
+  flex: 1;
+}
+
+.mob-btn {
+  width: 36px; height: 36px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text2);
+  font-size: 16px;
+  transition: all var(--transition);
+}
+
+.mob-btn:hover, .mob-btn:active { background: var(--surface2); }
+
+/* Mobile block header (back button) */
+#mobile-block-nav {
+  display: none;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: calc(var(--safe-top) + 10px) 16px 10px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--gold);
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  padding: 6px 0;
+  background: none;
+  border: none;
+}
+
+.mob-block-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  #sidebar { display: none; }
+  #topbar { display: none; }
+
+  #mobile-nav { display: flex; }
+
+  #main {
+    width: 100%;
+  }
+
+  #content {
+    padding: 20px 16px calc(20px + var(--safe-bottom));
+  }
+
+  .actions-table-head,
+  .action-row {
+    grid-template-columns: 26px 1fr 56px 28px;
+  }
+
+  /* Hide duration column on mobile */
+  .col-dur, .action-dur { display: none; }
+
+  .del-action-btn { opacity: 1; }
+
+  .meta-field { min-width: 140px; }
+}
+
+/* Mobile: show the panel state via JS classes */
+@media (max-width: 768px) {
+  body.mob-list #mobile-nav { display: flex; }
+  body.mob-list #mobile-block-nav { display: none; }
+  body.mob-list .welcome,
+  body.mob-list .rpm-view,
+  body.mob-list .archive-view { display: none; }
+  body.mob-list #mob-dashboard { display: block; }
+
+  body.mob-detail #mobile-nav { display: none; }
+  body.mob-detail #mobile-block-nav { display: flex; }
+  body.mob-detail #mob-dashboard { display: none; }
+}
+
+/* Mobile dashboard */
+#mob-dashboard {
+  display: none;
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+#mob-dashboard .mob-section-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--text3);
+  padding: 8px 4px 6px;
+}
+
+.mob-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mob-card:active { background: var(--surface2); border-color: var(--border2); }
+
+.mob-card .mc-cat {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text3);
+  margin-bottom: 6px;
+}
+
+.mob-card .mc-result {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 19px;
+  font-style: italic;
+  font-weight: 300;
+  color: var(--text);
+  line-height: 1.3;
+  margin-bottom: 10px;
+}
+
+.mob-card .mc-bar { height: 2px; background: var(--border); border-radius: 1px; overflow: hidden; margin-bottom: 6px; }
+.mob-card .mc-fill { height: 100%; background: var(--gold); border-radius: 1px; transition: width 0.4s; }
+.mob-card .mc-fill.complete { background: var(--green); }
+.mob-card .mc-meta { font-family: 'Geist Mono', monospace; font-size: 9px; color: var(--text3); display: flex; justify-content: space-between; }
+
+.mob-archive-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  border: 1px solid transparent;
+  margin-bottom: 4px;
+  transition: all var(--transition);
+  color: var(--text3);
+}
+
+.mob-archive-row:active { background: var(--surface2); }
+.mob-archive-row span { font-size: 13px; }
+.mob-archive-row .mar-count { margin-left: auto; font-family: 'Geist Mono', monospace; font-size: 9px; }
+
+/* ─── Loading overlay ────────────────────────────────────────────────────── */
+#loading {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 999;
+  flex-direction: column;
+  gap: 12px;
+  transition: opacity 0.4s;
+}
+
+#loading .load-brand {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 42px;
+  font-style: italic;
+  color: var(--gold);
+  font-weight: 300;
+}
+
+#loading .load-sub {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--text3);
+}
+
+/* ─── Fullscreen mode ────────────────────────────────────────────────────── */
+body.fullscreen #sidebar { display: none; }
+body.fullscreen #topbar .topbar-title { display: block; }
+
+/* ─── Animations ─────────────────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.rpm-view, .archive-view, .welcome { animation: fadeIn 0.2s ease; }
+</style>
+</head>
+<body class="mob-list">
+
+<!-- Loading -->
+<div id="loading">
+  <div class="load-brand">RPM</div>
+  <div class="load-sub">Loading your plan...</div>
+</div>
+
+<!-- App -->
+<div id="app">
+
+  <!-- Desktop Sidebar -->
+  <nav id="sidebar">
+    <div class="sidebar-top">
+      <div class="brand">RPM</div>
+      <div class="brand-sub">Rapid Planning Method</div>
+    </div>
+    <div class="sidebar-scroll" id="sidebarScroll"></div>
+    <button class="new-block-btn" onclick="newBlock()">+ New RPM Block</button>
+  </nav>
+
+  <!-- Main -->
+  <div id="main">
+
+    <!-- Mobile: list nav -->
+    <div id="mobile-nav">
+      <div class="mob-brand">RPM</div>
+      <button class="mob-btn" onclick="newBlock()" title="New block">＋</button>
+    </div>
+
+    <!-- Mobile: block detail nav -->
+    <div id="mobile-block-nav">
+      <button class="back-btn" onclick="mobBack()">← Dashboard</button>
+      <div class="mob-block-actions" id="mobBlockActions"></div>
+    </div>
+
+    <!-- Desktop topbar -->
+    <div id="topbar">
+      <div class="topbar-title" id="topbarTitle">RPM Planner</div>
+      <div id="topbarActions"></div>
+    </div>
+
+    <!-- Mobile dashboard -->
+    <div id="mob-dashboard"></div>
+
+    <!-- Desktop/detail content -->
+    <div id="content"></div>
+
+  </div>
+</div>
+
+<!-- Sync status -->
+<div id="sync-status"></div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// CONFIG — Replace SCRIPT_URL with your deployed Google Apps Script URL
+// ═══════════════════════════════════════════════════════════════════════════
+const CONFIG = {
+  SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxWVhobrMi0YL-SENVpJ-yNGZLLk7iF_bOCm-ijrR53UIkffNacjoyidfkzXDDuMRTFRQ/exec',
+  SAVE_DEBOUNCE_MS: 1200,
+  LOCAL_KEY: 'rpm_data_v2'
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════════════
+let state = {
+  active: [],    // Array of block objects
+  archived: []   // Array of completed block objects
+};
+
+let currentBlockId = null;  // Which block is open (desktop)
+let currentView = 'welcome'; // 'welcome' | 'block' | 'archive'
+let isFullscreen = false;
+let saveTimer = null;
+let isMobile = () => window.innerWidth <= 768;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════════════════
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function esc(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function autoResize(el) {
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  const target = new Date(dateStr);
+  if (isNaN(target)) return null;
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  target.setHours(0,0,0,0);
+  return Math.round((target - today) / 86400000);
+}
+
+function formatDate(isoStr) {
+  if (!isoStr) return '';
+  return new Date(isoStr).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+}
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+function setSyncStatus(state, msg) {
+  const el = document.getElementById('sync-status');
+  el.className = `show ${state}`;
+  el.textContent = msg;
+  if (state === 'saved') {
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove('show'), 2000);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PERSISTENCE — Local + Cloud
+// ═══════════════════════════════════════════════════════════════════════════
+function saveLocal() {
+  try { localStorage.setItem(CONFIG.LOCAL_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem(CONFIG.LOCAL_KEY);
+    if (raw) { state = JSON.parse(raw); return true; }
+  } catch(e) {}
+  return false;
+}
+
+async function saveCloud() {
+  if (!CONFIG.SCRIPT_URL || CONFIG.SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') return;
+  try {
+    setSyncStatus('saving', '⟳ Saving...');
+    await fetch(CONFIG.SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'save', data: state })
+    });
+    setSyncStatus('saved', '✓ Saved');
+    saveLocal();
+  } catch(e) {
+    setSyncStatus('error', '✕ Save failed');
+  }
+}
+
+async function loadCloud() {
+  if (!CONFIG.SCRIPT_URL || CONFIG.SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') return false;
+  try {
+    const res = await fetch(`${CONFIG.SCRIPT_URL}?action=load`);
+    const json = await res.json();
+    if (json && json.data) {
+      state = json.data;
+      saveLocal();
+      return true;
+    }
+  } catch(e) {}
+  return false;
+}
+
+function scheduleSave() {
+  saveLocal();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveCloud, CONFIG.SAVE_DEBOUNCE_MS);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BLOCK OPERATIONS
+// ═══════════════════════════════════════════════════════════════════════════
+function newBlock() {
+  const block = {
+    id: uid(),
+    result: '',
+    subtitle: '',
+    purpose: '',
+    deadline: '',
+    totalTime: '',
+    createdAt: new Date().toISOString(),
+    actions: [{ id: uid(), action: '', duration: '', priority: '', checked: false }]
+  };
+  state.active.unshift(block);
+  scheduleSave();
+  openBlock(block.id);
+}
+
+function openBlock(id) {
+  currentBlockId = id;
+  currentView = 'block';
+  if (isMobile()) {
+    document.body.classList.remove('mob-list');
+    document.body.classList.add('mob-detail');
+  }
+  renderSidebar();
+  renderMobDashboard();
+  renderContent();
+}
+
+function deleteBlock(id) {
+  if (!confirm('Delete this RPM block? This cannot be undone.')) return;
+  state.active = state.active.filter(b => b.id !== id);
+  scheduleSave();
+  if (currentBlockId === id) {
+    currentBlockId = null;
+    currentView = state.active.length > 0 ? 'welcome' : 'welcome';
+    if (isMobile()) { mobBack(); return; }
+  }
+  renderSidebar();
+  renderMobDashboard();
+  renderContent();
+  showToast('Block deleted');
+}
+
+function archiveBlock(id) {
+  const block = state.active.find(b => b.id === id);
+  if (!block) return;
+  block.completedAt = new Date().toISOString();
+  state.archived.unshift(block);
+  state.active = state.active.filter(b => b.id !== id);
+  scheduleSave();
+  currentBlockId = null;
+  currentView = 'welcome';
+  if (isMobile()) { mobBack(); }
+  renderSidebar();
+  renderMobDashboard();
+  renderContent();
+  showToast('Goal archived! 🎉');
+}
+
+function restoreBlock(id) {
+  const block = state.archived.find(b => b.id === id);
+  if (!block) return;
+  delete block.completedAt;
+  state.archived = state.archived.filter(b => b.id !== id);
+  state.active.unshift(block);
+  scheduleSave();
+  openBlock(block.id);
+  showToast('Block restored');
+}
+
+function updateBlockField(id, field, value) {
+  const block = state.active.find(b => b.id === id);
+  if (block) { block[field] = value; scheduleSave(); }
+}
+
+function toggleAction(blockId, actionId) {
+  const block = state.active.find(b => b.id === blockId);
+  if (!block) return;
+  const act = block.actions.find(a => a.id === actionId);
+  if (!act) return;
+  act.checked = !act.checked;
+  scheduleSave();
+  // Lightweight DOM update
+  const cb = document.querySelector(`[data-cb="${actionId}"]`);
+  const inp = document.querySelector(`[data-ai="${actionId}"]`);
+  if (cb) { cb.classList.toggle('checked', act.checked); cb.textContent = act.checked ? '✓' : ''; }
+  if (inp) inp.classList.toggle('struck', act.checked);
+  updateProgressUI(blockId);
+  renderSidebar();
+  renderMobDashboard();
+}
+
+function updateAction(blockId, actionId, field, value) {
+  const block = state.active.find(b => b.id === blockId);
+  if (!block) return;
+  const act = block.actions.find(a => a.id === actionId);
+  if (act) { act[field] = value; scheduleSave(); }
+}
+
+function addAction(blockId) {
+  const block = state.active.find(b => b.id === blockId);
+  if (!block) return;
+  const newAct = { id: uid(), action: '', duration: '', priority: '', checked: false };
+  block.actions.push(newAct);
+  scheduleSave();
+  // Inject row without full re-render
+  const container = document.getElementById(`actions-list-${blockId}`);
+  if (container) {
+    const row = buildActionRow(blockId, newAct);
+    container.insertAdjacentHTML('beforeend', row);
+    const newInput = container.querySelector(`[data-ai="${newAct.id}"]`);
+    if (newInput) newInput.focus();
+  }
+  updateProgressUI(blockId);
+}
+
+function deleteAction(blockId, actionId) {
+  const block = state.active.find(b => b.id === blockId);
+  if (!block) return;
+  block.actions = block.actions.filter(a => a.id !== actionId);
+  scheduleSave();
+  const row = document.getElementById(`ar-${actionId}`);
+  if (row) row.remove();
+  updateProgressUI(blockId);
+}
+
+function updateProgressUI(blockId) {
+  const block = state.active.find(b => b.id === blockId);
+  if (!block) return;
+  const filled = block.actions.filter(a => a.action.trim());
+  const done = filled.filter(a => a.checked);
+  const pct = filled.length > 0 ? Math.round((done.length / filled.length) * 100) : 0;
+  const fill = document.querySelector(`[data-fp="${blockId}"]`);
+  const label = document.querySelector(`[data-fpl="${blockId}"]`);
+  if (fill) { fill.style.width = pct + '%'; fill.className = `fp-fill${pct===100?' complete':''}`; }
+  if (label) label.textContent = `${done.length} / ${filled.length} actions`;
+  // Also update card in sidebar
+  const cardFill = document.querySelector(`[data-card-fill="${blockId}"]`);
+  const cardPct = document.querySelector(`[data-card-pct="${blockId}"]`);
+  if (cardFill) { cardFill.style.width = pct+'%'; cardFill.className = `card-bar-fill${pct===100?' complete':''}`; }
+  if (cardPct) cardPct.textContent = pct+'%';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MOBILE NAV
+// ═══════════════════════════════════════════════════════════════════════════
+function mobBack() {
+  document.body.classList.remove('mob-detail');
+  document.body.classList.add('mob-list');
+  currentBlockId = null;
+  currentView = 'welcome';
+  renderMobDashboard();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FULLSCREEN TOGGLE
+// ═══════════════════════════════════════════════════════════════════════════
+function toggleFullscreen() {
+  isFullscreen = !isFullscreen;
+  document.body.classList.toggle('fullscreen', isFullscreen);
+  const btn = document.getElementById('fsBtn');
+  if (btn) btn.classList.toggle('active', isFullscreen);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RENDER — SIDEBAR
+// ═══════════════════════════════════════════════════════════════════════════
+function renderSidebar() {
+  const container = document.getElementById('sidebarScroll');
+  if (!container) return;
+  let html = `<div class="sidebar-label">Active Goals</div>`;
+
+  if (state.active.length === 0) {
+    html += `<div style="padding:10px 14px;font-size:12px;color:var(--text3);font-style:italic;">No active blocks yet</div>`;
+  } else {
+    state.active.forEach(block => {
+      const isActive = currentBlockId === block.id;
+      const filled = block.actions.filter(a => a.action.trim());
+      const done = filled.filter(a => a.checked);
+      const pct = filled.length > 0 ? Math.round((done.length / filled.length)*100) : 0;
+      const days = daysUntil(block.deadline);
+      let deadlineHtml = '';
+      if (days !== null) {
+        const cls = days < 0 ? 'urgent' : days <= 14 ? 'soon' : '';
+        const txt = days < 0 ? `${Math.abs(days)}d overdue` : days === 0 ? 'Due today' : `${days}d left`;
+        deadlineHtml = `<div class="card-deadline ${cls}">${txt}</div>`;
+      }
+      html += `
+        <div class="block-card${isActive?' active':''}" onclick="openBlock('${block.id}')">
+          <div class="card-category">${esc(block.subtitle || 'Uncategorized')}</div>
+          <div class="card-result">${esc(block.result || 'Untitled goal...')}</div>
+          <div class="card-progress">
+            <div class="card-bar"><div class="card-bar-fill${pct===100?' complete':''}" data-card-fill="${block.id}" style="width:${pct}%"></div></div>
+            <div class="card-pct" data-card-pct="${block.id}">${pct}%</div>
+          </div>
+          ${deadlineHtml}
+        </div>`;
+    });
+  }
+
+  if (state.archived.length > 0) {
+    html += `<div class="sidebar-label" style="margin-top:16px;">Completed</div>`;
+    html += `
+      <div class="archive-nav${currentView==='archive'?' active':''}" onclick="openArchive()">
+        <span class="arch-icon">◉</span>
+        <span>Goals Archive</span>
+        <span class="arch-count">${state.archived.length}</span>
+      </div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RENDER — MOBILE DASHBOARD
+// ═══════════════════════════════════════════════════════════════════════════
+function renderMobDashboard() {
+  const container = document.getElementById('mob-dashboard');
+  if (!container) return;
+  let html = `<div class="mob-section-label">Active Goals</div>`;
+
+  if (state.active.length === 0) {
+    html += `<div style="padding:20px 4px;font-size:13px;color:var(--text3);font-style:italic;text-align:center;">Tap + to create your first RPM block</div>`;
+  } else {
+    state.active.forEach(block => {
+      const filled = block.actions.filter(a => a.action.trim());
+      const done = filled.filter(a => a.checked);
+      const pct = filled.length > 0 ? Math.round((done.length / filled.length)*100) : 0;
+      const days = daysUntil(block.deadline);
+      const daysStr = days !== null ? (days < 0 ? `${Math.abs(days)}d overdue` : days === 0 ? 'Due today' : `${days}d left`) : '';
+      html += `
+        <div class="mob-card" onclick="openBlock('${block.id}')">
+          <div class="mc-cat">${esc(block.subtitle || 'Uncategorized')}</div>
+          <div class="mc-result">${esc(block.result || 'Untitled goal...')}</div>
+          <div class="mc-bar"><div class="mc-fill${pct===100?' complete':''}" style="width:${pct}%"></div></div>
+          <div class="mc-meta">
+            <span>${done.length}/${filled.length} actions</span>
+            <span>${daysStr}</span>
+          </div>
+        </div>`;
+    });
+  }
+
+  if (state.archived.length > 0) {
+    html += `<div class="mob-section-label" style="margin-top:16px;">Completed</div>`;
+    html += `
+      <div class="mob-archive-row" onclick="openArchive()">
+        <span>◉ Goals Archive</span>
+        <span class="mar-count">${state.archived.length} completed</span>
+      </div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RENDER — TOPBAR
+// ═══════════════════════════════════════════════════════════════════════════
+function renderTopbar(block) {
+  const titleEl = document.getElementById('topbarTitle');
+  const actionsEl = document.getElementById('topbarActions');
+  const mobActionsEl = document.getElementById('mobBlockActions');
+
+  if (!block) {
+    if (titleEl) titleEl.textContent = 'RPM Planner';
+    if (actionsEl) actionsEl.innerHTML = '';
+    if (mobActionsEl) mobActionsEl.innerHTML = '';
+    return;
+  }
+
+  if (titleEl) titleEl.textContent = block.result || 'Untitled goal';
+
+  const btns = `
+    <div style="display:flex;gap:8px;">
+      <button class="topbar-btn success" onclick="archiveBlock('${block.id}')" title="Mark complete & archive">✓</button>
+      <button class="topbar-btn danger" onclick="deleteBlock('${block.id}')" title="Delete block">✕</button>
+      <button class="topbar-btn" id="fsBtn" onclick="toggleFullscreen()" title="Toggle fullscreen">⛶</button>
+    </div>`;
+
+  if (actionsEl) actionsEl.innerHTML = btns;
+
+  // Mobile block nav buttons
+  if (mobActionsEl) {
+    mobActionsEl.innerHTML = `
+      <button class="mob-btn" onclick="archiveBlock('${block.id}')" style="color:var(--green);" title="Complete">✓</button>
+      <button class="mob-btn" onclick="deleteBlock('${block.id}')" style="color:var(--red);" title="Delete">✕</button>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RENDER — CONTENT AREA
+// ═══════════════════════════════════════════════════════════════════════════
+function renderContent() {
+  const container = document.getElementById('content');
+
+  if (currentView === 'welcome' || !currentBlockId) {
+    renderTopbar(null);
+    container.innerHTML = `
+      <div class="welcome">
+        <div class="welcome-glyph">◈</div>
+        <h2>Ready to plan?</h2>
+        <p>Select a block from the sidebar, or create a new one to start mapping your results, purpose, and action steps.</p>
+      </div>`;
+    return;
+  }
+
+  if (currentView === 'archive') {
+    renderTopbar(null);
+    renderArchive(container);
+    return;
+  }
+
+  const block = state.active.find(b => b.id === currentBlockId);
+  if (!block) { currentView = 'welcome'; renderContent(); return; }
+
+  renderTopbar(block);
+  renderBlock(container, block);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RENDER — RPM BLOCK
+// ═══════════════════════════════════════════════════════════════════════════
+function buildActionRow(blockId, act) {
+  return `
+    <div class="action-row" id="ar-${act.id}">
+      <div class="check-box ${act.checked?'checked':''}" data-cb="${act.id}" onclick="toggleAction('${blockId}','${act.id}')">${act.checked?'✓':''}</div>
+      <input class="action-text ${act.checked?'struck':''}" data-ai="${act.id}"
+        type="text" placeholder="Action step..."
+        value="${esc(act.action)}"
+        oninput="updateAction('${blockId}','${act.id}','action',this.value)"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();addAction('${blockId}');}"
+      />
+      <input class="action-dur col-dur" type="text" placeholder="0 min"
+        value="${esc(act.duration)}"
+        oninput="updateAction('${blockId}','${act.id}','duration',this.value)"
+      />
+      <select class="action-pri" onchange="updateAction('${blockId}','${act.id}','priority',this.value)">
+        <option value="" ${!act.priority?'selected':''}>—</option>
+        <option value="1" ${'1'===act.priority?'selected':''}>P1 🔥</option>
+        <option value="2" ${'2'===act.priority?'selected':''}>P2 ⚡</option>
+        <option value="3" ${'3'===act.priority?'selected':''}>P3 ·</option>
+      </select>
+      <button class="del-action-btn" onclick="deleteAction('${blockId}','${act.id}')" title="Delete">✕</button>
+    </div>`;
+}
+
+function renderBlock(container, block) {
+  const filled = block.actions.filter(a => a.action.trim());
+  const done = filled.filter(a => a.checked);
+  const pct = filled.length > 0 ? Math.round((done.length / filled.length)*100) : 0;
+
+  const days = daysUntil(block.deadline);
+  let countdownHtml = '';
+  if (days !== null) {
+    const cls = days < 0 ? 'overdue' : days === 0 ? 'urgent' : days <= 14 ? 'soon' : '';
+    const txt = days < 0 ? `${Math.abs(days)} days overdue` : days === 0 ? 'Due today!' : `${days} days remaining`;
+    countdownHtml = `<div class="deadline-countdown"><span class="countdown-val ${cls}">${txt}</span></div>`;
+  }
+
+  const actionsHtml = block.actions.map(act => buildActionRow(block.id, act)).join('');
+
+  container.innerHTML = `
+    <div class="rpm-view">
+
+      <div class="view-section">
+        <div class="field-label">Result</div>
+        <textarea class="result-input" placeholder="What do you want to achieve?"
+          oninput="updateBlockField('${block.id}','result',this.value); autoResize(this); document.getElementById('topbarTitle').textContent=this.value||'Untitled goal'; renderSidebar(); renderMobDashboard();"
+          rows="1"
+        >${esc(block.result)}</textarea>
+        <input class="category-input" type="text" placeholder="Focus area / category"
+          value="${esc(block.subtitle)}"
+          oninput="updateBlockField('${block.id}','subtitle',this.value); renderSidebar(); renderMobDashboard();"
+        />
+      </div>
+
+      <div class="meta-row">
+        <div class="meta-field">
+          <div class="field-label">Deadline</div>
+          <input class="meta-input" type="date"
+            value="${esc(block.deadline)}"
+            oninput="updateBlockField('${block.id}','deadline',this.value); renderSidebar(); renderMobDashboard(); renderCountdown('${block.id}');"
+          />
+          <div id="countdown-${block.id}">${countdownHtml}</div>
+        </div>
+        <div class="meta-field">
+          <div class="field-label">Total Time Est.</div>
+          <input class="meta-input" type="text" placeholder="e.g. 20 hrs / week"
+            value="${esc(block.totalTime)}"
+            oninput="updateBlockField('${block.id}','totalTime',this.value);"
+          />
+        </div>
+      </div>
+
+      <div class="view-section">
+        <div class="field-label">Purpose — Why does this matter?</div>
+        <div class="purpose-wrap">
+          <textarea class="purpose-input" placeholder="What does achieving this result mean to you?"
+            oninput="updateBlockField('${block.id}','purpose',this.value); autoResize(this);"
+            rows="2"
+          >${esc(block.purpose)}</textarea>
+        </div>
+      </div>
+
+      <hr class="section-rule"/>
+
+      <div class="view-section">
+        <div class="field-label" style="margin-bottom:12px;">Massive Action Plan</div>
+        <div class="actions-table-head">
+          <div></div>
+          <div class="th">Action</div>
+          <div class="th right col-dur">Duration</div>
+          <div class="th right">Priority</div>
+          <div></div>
+        </div>
+        <div id="actions-list-${block.id}">
+          ${actionsHtml}
+        </div>
+        <div class="add-action" onclick="addAction('${block.id}')">
+          <span class="plus">+</span>
+          <span>Add action step</span>
+        </div>
+      </div>
+
+      <div class="block-footer">
+        <div class="footer-progress">
+          <div class="fp-bar"><div class="fp-fill${pct===100?' complete':''}" data-fp="${block.id}" style="width:${pct}%"></div></div>
+          <div class="fp-label" data-fpl="${block.id}">${done.length} / ${filled.length} actions</div>
+        </div>
+        <button class="complete-btn" onclick="archiveBlock('${block.id}')">Mark Complete →</button>
+      </div>
+
+    </div>`;
+
+  // Auto-resize textareas
+  container.querySelectorAll('textarea').forEach(autoResize);
+}
+
+function renderCountdown(blockId) {
+  const block = state.active.find(b => b.id === blockId);
+  if (!block) return;
+  const el = document.getElementById(`countdown-${blockId}`);
+  if (!el) return;
+  const days = daysUntil(block.deadline);
+  if (days === null) { el.innerHTML = ''; return; }
+  const cls = days < 0 ? 'overdue' : days === 0 ? 'urgent' : days <= 14 ? 'soon' : '';
+  const txt = days < 0 ? `${Math.abs(days)} days overdue` : days === 0 ? 'Due today!' : `${days} days remaining`;
+  el.innerHTML = `<div class="deadline-countdown"><span class="countdown-val ${cls}">${txt}</span></div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RENDER — ARCHIVE
+// ═══════════════════════════════════════════════════════════════════════════
+function openArchive() {
+  currentView = 'archive';
+  currentBlockId = null;
+  if (isMobile()) {
+    document.body.classList.remove('mob-list');
+    document.body.classList.add('mob-detail');
+    document.getElementById('mobile-block-nav').querySelector('.back-btn').onclick = mobBack;
+    document.getElementById('mobBlockActions').innerHTML = '';
+  }
+  renderSidebar();
+  renderContent();
+}
+
+function renderArchive(container) {
+  let html = `
+    <div class="archive-view">
+      <h2>Goals Archive</h2>
+      <div class="sub">${state.archived.length} completed goal${state.archived.length !== 1 ? 's' : ''}</div>`;
+
+  if (state.archived.length === 0) {
+    html += `<div style="color:var(--text3);font-size:13px;font-style:italic;text-align:center;margin-top:40px;">No completed goals yet — keep going.</div>`;
+  } else {
+    state.archived.forEach(block => {
+      const filled = block.actions.filter(a => a.action.trim());
+      html += `
+        <div class="archived-card">
+          <div class="ac-top">
+            <div>
+              <div class="ac-result">${esc(block.result || 'Untitled')}</div>
+              ${block.subtitle ? `<div class="ac-cat">${esc(block.subtitle)}</div>` : ''}
+            </div>
+            <button class="restore-btn" onclick="restoreBlock('${block.id}')">Restore</button>
+          </div>
+          ${block.purpose ? `<div class="ac-purpose">${esc(block.purpose)}</div>` : ''}
+          <div class="ac-pills">${filled.map(a=>`<div class="ac-pill${a.checked?' done':''}">${esc(a.action)}</div>`).join('')}</div>
+          <div class="ac-meta">Completed ${formatDate(block.completedAt)}${block.deadline?` · Target was ${formatDate(block.deadline)}`:''}</div>
+        </div>`;
+    });
+  }
+
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════════
+async function init() {
+  // 1. Load local first for instant render
+  const hasLocal = loadLocal();
+
+  // Seed with example data if brand new
+  if (!hasLocal || (state.active.length === 0 && state.archived.length === 0)) {
+    state.active = [{
+      id: uid(),
+      result: 'Make $20,000 with my business before August.',
+      subtitle: 'Coaching Business',
+      purpose: "This will show my business works, proving I'm on the path to freedom.",
+      deadline: '2026-08-01',
+      totalTime: '',
+      createdAt: new Date().toISOString(),
+      actions: [
+        { id: uid(), action: 'Get 5 clients', duration: '', priority: '1', checked: false },
+        { id: uid(), action: '', duration: '', priority: '', checked: false }
+      ]
+    }];
+    saveLocal();
+  }
+
+  // 2. Render immediately from local
+  currentBlockId = state.active.length > 0 ? state.active[0].id : null;
+  currentView = currentBlockId ? 'block' : 'welcome';
+
+  renderSidebar();
+  renderMobDashboard();
+  renderContent();
+
+  // 3. Hide loading screen
+  const loading = document.getElementById('loading');
+  loading.style.opacity = '0';
+  setTimeout(() => loading.style.display = 'none', 400);
+
+  // 4. Try to load from cloud (silently updates if newer data found)
+  const cloudLoaded = await loadCloud();
+  if (cloudLoaded) {
+    renderSidebar();
+    renderMobDashboard();
+    renderContent();
+  }
+}
+
+// Handle resize between mobile/desktop
+window.addEventListener('resize', () => {
+  renderSidebar();
+  renderMobDashboard();
+});
+
+// Warn on close if unsaved
+window.addEventListener('beforeunload', () => { saveLocal(); });
+
+init();
+</script>
+</body>
+</html>
